@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### keys ###
+src/main/resources/tab-private_key.json
