@@ -30,8 +30,14 @@
 		<java.version>25</java.version>
 		<org.springdoc>2.5.0</org.springdoc>
 		<firebase-sdk.version>9.7.0</firebase-sdk.version>
+		<sendgrid-sdk.version>4.10.3</sendgrid-sdk.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>com.sendgrid</groupId>
+			<artifactId>sendgrid-java</artifactId>
+			<version>${sendgrid-sdk.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>

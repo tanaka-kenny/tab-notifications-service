@@ -13,6 +13,7 @@ import org.springframework.core.io.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -22,6 +23,11 @@ public class FirebaseConfig {
 
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
+        List<FirebaseApp> apps = FirebaseApp.getApps();
+        if (!apps.isEmpty()) {
+            return apps.getFirst();
+        }
+
         InputStream credentials = getCredentials();
         FirebaseOptions firebaseOptions
             = FirebaseOptions.builder()

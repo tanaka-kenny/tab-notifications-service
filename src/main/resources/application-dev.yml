@@ -19,6 +19,13 @@ spring:
 google-firebase:
   api-base-url: https://identitytoolkit.googleapis.com/v1/accounts
 
+sendgrid:
+  api-key: ${SENDGRID_API_KEY}
+  from-email: tanakamadondo2@gmail.com
+
+tab-services:
+  registration-base-url: http://localhost:8481/registration-service
+
 logging:
   level:
     root: INFO
