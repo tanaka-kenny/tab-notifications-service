@@ -1,5 +1,5 @@
 server:
-  port: 8381
+  port: 8381 #
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/tab-notifications-dev
@@ -15,6 +15,17 @@ spring:
   config:
     activate:
       on-profile: dev
+  mail:
+    host: ${EMAIL_HOST}
+    port: ${EMAIL_PORT}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 google-firebase:
   api-base-url: https://identitytoolkit.googleapis.com/v1/accounts
