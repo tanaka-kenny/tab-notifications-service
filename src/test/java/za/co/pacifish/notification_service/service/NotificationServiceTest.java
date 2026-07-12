@@ -10,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import za.co.pacifish.notification_service.dto.SendEmailRequest;
 import za.co.pacifish.notification_service.entity.NotificationLog;
 import za.co.pacifish.notification_service.enumeration.Channel;
-import za.co.pacifish.notification_service.enumeration.EmailTemplate;
 import za.co.pacifish.notification_service.enumeration.NotificationStatus;
 import za.co.pacifish.notification_service.exception.SendEmailException;
 import za.co.pacifish.notification_service.repository.NotificationLogRepository;

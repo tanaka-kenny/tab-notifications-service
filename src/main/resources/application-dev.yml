@@ -2,7 +2,7 @@ server:
   port: 8381 #
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/tab-notifications-dev
+    url: jdbc:postgresql://localhost:5432/tab_notifications_dev
     username: myuser
     password: secret
     driver-class-name: org.postgresql.Driver
@@ -32,4 +32,4 @@ google-firebase:
 
 logging:
   level:
-    root: INFO
+    root: DEBUG

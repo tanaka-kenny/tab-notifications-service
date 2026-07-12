@@ -7,7 +7,6 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
@@ -44,11 +43,11 @@ public class EmailHelper {
 
     private EmailParts getEmailParts(SendEmailRequest.EmailRequest request, Map<String, Object> model) {
         try {
-            Template template = freemarkerConfig.getTemplate(request.template().getFile());
+            Template template = freemarkerConfig.getTemplate(request.template());
             String htmlOutput = FreeMarkerTemplateUtils.processTemplateIntoString(template, model);
             String[] templateParts = htmlOutput.split("-----");
             if (templateParts.length != 2) {
-                log.error("Parsing error for template {}", request.template().getFile());
+                log.error("Parsing error for template {}", request.template());
                 throw new SendEmailException("An error occurred");
             }
             String subject = templateParts[0].trim();
@@ -56,7 +55,7 @@ public class EmailHelper {
 
             return new EmailParts(subject, body);
         } catch (IOException | TemplateException e) {
-            log.error("Error while generating email parts for template {} and recipient {}", request.template().getFile(), request.to(), e);
+            log.error("Error while generating email parts for template {} and recipient {}", request.template(), request.to(), e);
             throw new SendEmailException("Error while sending email to " + request.to());
         }
     }

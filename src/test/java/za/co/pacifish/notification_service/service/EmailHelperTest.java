@@ -7,7 +7,6 @@ import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
 import org.springframework.mail.javamail.JavaMailSender;
 import za.co.pacifish.notification_service.dto.SendEmailRequest;
-import za.co.pacifish.notification_service.enumeration.EmailTemplate;
 import za.co.pacifish.notification_service.exception.SendEmailException;
 
 import java.io.ByteArrayOutputStream;
