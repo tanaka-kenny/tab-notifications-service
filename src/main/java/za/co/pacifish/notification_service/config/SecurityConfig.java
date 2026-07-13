@@ -17,7 +17,7 @@ import za.co.pacifish.notification_service.filter.FirebaseIdTokenFilter;
 public class SecurityConfig {
     private final FirebaseIdTokenFilter firebaseTokenFilter;
 
-    private static final String[] WHITE_LIST_URL = {"/v3/api-docs/**", "/swagger-ui/**"};
+    private static final String[] WHITE_LIST_URL = {"/v3/api-docs/**", "/swagger-ui/**", "/api/notifications/**"};
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {

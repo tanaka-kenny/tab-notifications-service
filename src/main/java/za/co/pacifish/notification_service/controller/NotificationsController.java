@@ -11,7 +11,7 @@ import za.co.pacifish.notification_service.dto.SendEmailRequest;
 import za.co.pacifish.notification_service.service.NotificationService;
 
 @RestController
-@RequestMapping("/notifications")
+@RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 public class NotificationsController {
 
