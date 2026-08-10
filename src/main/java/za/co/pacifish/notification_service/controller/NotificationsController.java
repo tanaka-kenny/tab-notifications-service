@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import za.co.pacifish.notification_service.dto.SendEmailRequest;
+import za.co.pacifish.notification_service.dto.NotificationRequest;
+import za.co.pacifish.notification_service.entity.NotificationLog;
+import za.co.pacifish.notification_service.enumeration.NotificationStatus;
 import za.co.pacifish.notification_service.service.NotificationService;
 
 @RestController
@@ -17,12 +19,10 @@ public class NotificationsController {
 
     private final NotificationService notificationService;
 
-    @PostMapping("/email")
+    @PostMapping("/send")
     public ResponseEntity<Object> sendEmail(
-        @Valid @RequestBody SendEmailRequest payload) {
-        notificationService.sendEmail(payload);
-        return ResponseEntity.ok().build();
+        @Valid @RequestBody NotificationRequest payload) {
+        NotificationLog notificationLog = notificationService.dispatchNotification(payload);
+        return ResponseEntity.ok(notificationLog);
     }
-
-
 }

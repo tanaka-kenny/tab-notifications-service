@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import za.co.pacifish.notification_service.enumeration.Channel;
 import za.co.pacifish.notification_service.enumeration.NotificationStatus;
 
 import java.time.LocalDateTime;
@@ -17,6 +16,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name = "channel")
 public class NotificationLog {
 
     @Id
@@ -24,8 +25,7 @@ public class NotificationLog {
     private UUID id;
 
     @Column(nullable = false)
-    @Enumerated(value = EnumType.STRING)
-    private Channel channel;
+    private String templateKey;
 
     @Column(nullable = false)
     private String recipient;
