@@ -9,12 +9,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import za.co.pacifish.notification_service.filter.FirebaseIdTokenFilter;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -22,7 +17,7 @@ import java.util.List;
 public class SecurityConfig {
     private final FirebaseIdTokenFilter firebaseTokenFilter;
 
-    private static final String[] WHITE_LIST_URL = {"/v3/api-docs/**", "/swagger-ui/**"};
+    private static final String[] WHITE_LIST_URL = {"/v3/api-docs/**", "/swagger-ui/**", "/api/notifications/**"};
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -39,14 +34,4 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
-    UrlBasedCorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
 }
