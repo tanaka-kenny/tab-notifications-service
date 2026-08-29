@@ -1,17 +1,16 @@
 package za.co.pacifish.notification_service.service;
 
-import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import za.co.pacifish.notification_service.dto.SendEmailRequest;
+import za.co.pacifish.notification_service.dto.NotificationRequest;
 import za.co.pacifish.notification_service.entity.NotificationLog;
 import za.co.pacifish.notification_service.enumeration.Channel;
 import za.co.pacifish.notification_service.enumeration.NotificationStatus;
-import za.co.pacifish.notification_service.exception.SendEmailException;
+import za.co.pacifish.notification_service.exception.SendNotificationException;
 import za.co.pacifish.notification_service.repository.NotificationLogRepository;
 
 import java.util.Map;
@@ -20,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -29,86 +28,105 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class NotificationServiceTest {
 
     @Mock
-    private NotificationLogRepository notificationsLogRepository;
+    private NotificationFactory factory;
 
     @Mock
-    private EmailHelper springEmailHelper;
+    private NotificationLogRepository notificationLogRepository;
+
+    @Mock
+    private NotificationStrategy notificationStrategy;
 
     private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(notificationsLogRepository, springEmailHelper);
+        notificationService = new NotificationService(factory, notificationLogRepository);
     }
 
     @Test
-    void sendEmail_savesSuccessNotificationLogWhenEmailIsSent() throws MessagingException {
-        SendEmailRequest payload = payload("recipient@example.com", Map.of("name", "Tanaka"));
+    void dispatchNotification_savesSuccessNotificationLogWhenStrategySucceeds() {
+        NotificationRequest request = payload(Channel.EMAIL, "recipient@example.com", "invite.ftl", Map.of("name", "Tanaka"));
+        NotificationLog successfulLog = NotificationLog.builder()
+            .recipient(request.recipient())
+            .templateKey(request.template())
+            .status(NotificationStatus.SUCCESS)
+            .build();
 
-        notificationService.sendEmail(payload);
+        when(factory.getStrategy(Channel.EMAIL)).thenReturn(notificationStrategy);
+        when(notificationStrategy.execute(request)).thenReturn(successfulLog);
 
-        verify(springEmailHelper).sendEmail(payload.emailRequest(), payload.templateVariables());
+        NotificationLog result = notificationService.dispatchNotification(request);
+        assertEquals(successfulLog, result);
 
         ArgumentCaptor<NotificationLog> logCaptor = ArgumentCaptor.forClass(NotificationLog.class);
-        verify(notificationsLogRepository).save(logCaptor.capture());
-
+        verify(notificationLogRepository).save(logCaptor.capture());
         NotificationLog savedLog = logCaptor.getValue();
-        assertEquals(Channel.EMAIL, savedLog.getChannel());
+
         assertEquals("recipient@example.com", savedLog.getRecipient());
         assertEquals(NotificationStatus.SUCCESS, savedLog.getStatus());
         assertNull(savedLog.getErrorDetails());
 
-        verifyNoMoreInteractions(springEmailHelper, notificationsLogRepository);
+        verify(factory).getStrategy(Channel.EMAIL);
+        verify(notificationStrategy).execute(request);
+        verifyNoMoreInteractions(factory, notificationStrategy, notificationLogRepository);
     }
 
     @Test
-    void sendEmail_savesFailedNotificationLogAndThrowsSendEmailExceptionWhenHelperFails() throws MessagingException {
-        SendEmailRequest payload = payload("failure@example.com", Map.of("inviteLink", "https://example.com"));
-        doThrow(new MessagingException("smtp failure"))
-            .when(springEmailHelper)
-            .sendEmail(payload.emailRequest(), payload.templateVariables());
+    void dispatchNotification_savesFailedNotificationLogAndThrowsWhenStrategyFails() {
+        NotificationRequest request = payload(Channel.EMAIL, "failure@example.com", "invite.ftl", Map.of("inviteLink", "https://example.com"));
+        NotificationLog failedLog = NotificationLog.builder()
+            .recipient(request.recipient())
+            .templateKey(request.template())
+            .status(NotificationStatus.FAILED)
+            .errorDetails("smtp failure")
+            .build();
 
-        SendEmailException exception = assertThrows(
-            SendEmailException.class,
-            () -> notificationService.sendEmail(payload)
+        when(factory.getStrategy(Channel.EMAIL)).thenReturn(notificationStrategy);
+        when(notificationStrategy.execute(request)).thenReturn(failedLog);
+
+        SendNotificationException exception = assertThrows(
+            SendNotificationException.class,
+            () -> notificationService.dispatchNotification(request)
         );
 
-        assertEquals("An error occurred while sending email to failure@example.com", exception.getMessage());
-
-        verify(springEmailHelper).sendEmail(payload.emailRequest(), payload.templateVariables());
+        assertEquals("Failed to send notification", exception.getMessage());
 
         ArgumentCaptor<NotificationLog> logCaptor = ArgumentCaptor.forClass(NotificationLog.class);
-        verify(notificationsLogRepository).save(logCaptor.capture());
+        verify(notificationLogRepository).save(logCaptor.capture());
 
         NotificationLog savedLog = logCaptor.getValue();
-        assertEquals(Channel.EMAIL, savedLog.getChannel());
         assertEquals("failure@example.com", savedLog.getRecipient());
         assertEquals(NotificationStatus.FAILED, savedLog.getStatus());
         assertTrue(savedLog.getErrorDetails().contains("smtp failure"));
 
-        verifyNoMoreInteractions(springEmailHelper, notificationsLogRepository);
+        verify(factory).getStrategy(Channel.EMAIL);
+        verify(notificationStrategy).execute(request);
+        verifyNoMoreInteractions(factory, notificationStrategy, notificationLogRepository);
     }
 
     @Test
-    void sendEmail_propagatesRuntimeSendEmailExceptionWithoutSavingLog() throws MessagingException {
-        SendEmailRequest payload = payload("runtime@example.com", Map.of("name", "Tanaka"));
-        doThrow(new SendEmailException("Error while sending email to runtime@example.com"))
-            .when(springEmailHelper)
-            .sendEmail(payload.emailRequest(), payload.templateVariables());
+    void dispatchNotification_propagatesFactoryExceptionWithoutSavingLog() {
+        NotificationRequest request = payload(Channel.PUSH_NOTIFICATION, "device-id-1", "push.ftl", Map.of("name", "Tanaka"));
+        when(factory.getStrategy(Channel.PUSH_NOTIFICATION))
+            .thenThrow(new IllegalArgumentException("No strategy found for channel: PUSH_NOTIFICATION"));
 
-        SendEmailException exception = assertThrows(
-            SendEmailException.class,
-            () -> notificationService.sendEmail(payload)
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> notificationService.dispatchNotification(request)
         );
 
-        assertEquals("Error while sending email to runtime@example.com", exception.getMessage());
-        verify(springEmailHelper).sendEmail(payload.emailRequest(), payload.templateVariables());
-        verifyNoInteractions(notificationsLogRepository);
-        verifyNoMoreInteractions(springEmailHelper);
+        assertEquals("No strategy found for channel: PUSH_NOTIFICATION", exception.getMessage());
+        verify(factory).getStrategy(Channel.PUSH_NOTIFICATION);
+        verifyNoInteractions(notificationStrategy, notificationLogRepository);
+        verifyNoMoreInteractions(factory);
     }
 
-    private SendEmailRequest payload(String recipient, Map<String, Object> variables) {
-        SendEmailRequest.EmailRequest emailRequest = new SendEmailRequest.EmailRequest(recipient, EmailTemplate.TAB_PLATFORM_INVITE);
-        return new SendEmailRequest(emailRequest, variables);
+    private NotificationRequest payload(
+        Channel channel,
+        String recipient,
+        String template,
+        Map<String, Object> variables
+    ) {
+        return new NotificationRequest(channel, recipient, template, variables);
     }
 }

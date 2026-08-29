@@ -6,8 +6,9 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
 import org.springframework.mail.javamail.JavaMailSender;
-import za.co.pacifish.notification_service.dto.SendEmailRequest;
-import za.co.pacifish.notification_service.exception.SendEmailException;
+import za.co.pacifish.notification_service.dto.NotificationRequest;
+import za.co.pacifish.notification_service.enumeration.Channel;
+import za.co.pacifish.notification_service.exception.SendNotificationException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,12 +34,14 @@ class EmailHelperTest {
         Configuration configuration = templateConfiguration("Welcome ${name}-----<p>Hello ${name}</p>");
         EmailHelper helper = new EmailHelper(mailSender, configuration);
 
-        SendEmailRequest.EmailRequest request = new SendEmailRequest.EmailRequest(
+        NotificationRequest request = new NotificationRequest(
+            Channel.EMAIL,
             "recipient@example.com",
-            EmailTemplate.TAB_PLATFORM_INVITE
+            "tab-invitation-email.ftl",
+            Map.of("name", "Tanaka")
         );
 
-        helper.sendEmail(request, Map.of("name", "Tanaka"));
+        helper.sendEmail(request);
 
         assertEquals("Welcome Tanaka", mimeMessage.getSubject());
         assertEquals("recipient@example.com", mimeMessage.getAllRecipients()[0].toString());
@@ -60,14 +63,16 @@ class EmailHelperTest {
         Configuration configuration = templateConfiguration("No separator in this output");
         EmailHelper helper = new EmailHelper(mailSender, configuration);
 
-        SendEmailRequest.EmailRequest request = new SendEmailRequest.EmailRequest(
+        NotificationRequest request = new NotificationRequest(
+            Channel.EMAIL,
             "recipient@example.com",
-            EmailTemplate.TAB_PLATFORM_INVITE
+            "tab-invitation-email.ftl",
+            Map.of()
         );
 
-        SendEmailException exception = assertThrows(
-            SendEmailException.class,
-            () -> helper.sendEmail(request, Map.of())
+        SendNotificationException exception = assertThrows(
+            SendNotificationException.class,
+            () -> helper.sendEmail(request)
         );
 
         assertEquals("An error occurred", exception.getMessage());
@@ -85,14 +90,16 @@ class EmailHelperTest {
 
         EmailHelper helper = new EmailHelper(mailSender, configuration);
 
-        SendEmailRequest.EmailRequest request = new SendEmailRequest.EmailRequest(
+        NotificationRequest request = new NotificationRequest(
+            Channel.EMAIL,
             "recipient@example.com",
-            EmailTemplate.TAB_PLATFORM_INVITE
+            "tab-invitation-email.ftl",
+            Map.of()
         );
 
-        SendEmailException exception = assertThrows(
-            SendEmailException.class,
-            () -> helper.sendEmail(request, Map.of())
+        SendNotificationException exception = assertThrows(
+            SendNotificationException.class,
+            () -> helper.sendEmail(request)
         );
 
         assertEquals("Error while sending email to recipient@example.com", exception.getMessage());

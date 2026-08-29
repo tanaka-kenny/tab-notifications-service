@@ -1,14 +1,13 @@
 package za.co.pacifish.notification_service.service;
 
-import jakarta.mail.MessagingException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import za.co.pacifish.notification_service.dto.SendEmailRequest;
+import za.co.pacifish.notification_service.dto.NotificationRequest;
 import za.co.pacifish.notification_service.entity.NotificationLog;
-import za.co.pacifish.notification_service.enumeration.Channel;
 import za.co.pacifish.notification_service.enumeration.NotificationStatus;
-import za.co.pacifish.notification_service.exception.SendEmailException;
+import za.co.pacifish.notification_service.exception.SendNotificationException;
 import za.co.pacifish.notification_service.repository.NotificationLogRepository;
 
 @Service
@@ -16,32 +15,21 @@ import za.co.pacifish.notification_service.repository.NotificationLogRepository;
 @RequiredArgsConstructor
 public class NotificationService {
 
-    private final NotificationLogRepository notificationsLogRepository;
-    private final EmailHelper springEmailHelper;
+    private final NotificationFactory factory;
+    private final NotificationLogRepository notificationLogRepository;
 
-    public void sendEmail(SendEmailRequest payload) {
+    @Transactional
+    public NotificationLog dispatchNotification(NotificationRequest request) {
+        NotificationStrategy notificationStrategy = factory.getStrategy(request.channel());
+        NotificationLog notification = notificationStrategy.execute(request);
 
-        NotificationLog notificationLog = NotificationLog.builder()
-            .channel(Channel.EMAIL)
-            .recipient(payload.emailRequest().to())
-            .build();
+        notificationLogRepository.save(notification);
 
-        try {
-            springEmailHelper.sendEmail(payload.emailRequest(), payload.templateVariables());
-
-            log.info("Email sent to {}", payload.emailRequest().to());
-
-            notificationLog.setStatus(NotificationStatus.SUCCESS);
-            notificationsLogRepository.save(notificationLog);
-        } catch (MessagingException ex) {
-            log.error("Error while sending email to {}", payload.emailRequest().to(), ex);
-            notificationLog.setErrorDetails(String.valueOf(ex));
-            notificationLog.setStatus(NotificationStatus.FAILED);
-            notificationsLogRepository.save(notificationLog);
-
-            throw new SendEmailException("An error occurred while sending email to " + payload.emailRequest().to());
-
+        if (notification.getStatus() == NotificationStatus.FAILED) {
+            throw new SendNotificationException("Failed to send notification");
         }
+
+        return notification;
     }
 
 }
